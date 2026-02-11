@@ -15,6 +15,7 @@ data = pd.DataFrame({
     'PlayTennis': ['No', 'No', 'Yes', 'Yes', 'Yes', 'No',
                    'Yes', 'No', 'Yes', 'Yes', 'Yes',
                    'Yes', 'Yes', 'No']})
+
 st.dataframe(data)
 def entropy(col):
     values, counts = np.unique(col, return_counts=True)
@@ -40,15 +41,6 @@ def id3(df, target, attrs):
         remaining_attrs = [a for a in attrs if a != best]
         tree[best][val] = id3(sub_df, target, remaining_attrs)
     return tree
-def print_tree(tree, indent=""):
-    if isinstance(tree, dict):
-        for attr, branches in tree.items():
-            for val, subtree in branches.items():
-                st.write(f"{indent}{attr} = {val}:")
-                print_tree(subtree, indent + "  ")
-    else:
-        st.write(f"{indent}--> {tree}")
 attributes = list(data.columns[:-1])
 tree = id3(data, 'PlayTennis', attributes)
-st.subheader("Decision Tree")
-print_tree(tree)
+st.write(tree)
