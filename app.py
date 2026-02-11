@@ -3,19 +3,35 @@ import pandas as pd
 import numpy as np
 import math
 
+st.title("ID3 Decision Tree")
+
+data = pd.DataFrame({
+    'Outlook': ['Sunny', 'Sunny', 'Overcast', 'Rain', 'Rain', 'Rain',
+                'Overcast', 'Sunny', 'Sunny', 'Rain', 'Sunny',
+                'Overcast', 'Overcast', 'Rain'],
+    'Humidity': ['High', 'High', 'High', 'High', 'Normal', 'Normal',
+                 'Normal', 'High', 'Normal', 'Normal', 'Normal',
+                 'High', 'Normal', 'High'],
+    'PlayTennis': ['No', 'No', 'Yes', 'Yes', 'Yes', 'No',
+                   'Yes', 'No', 'Yes', 'Yes', 'Yes',
+                   'Yes', 'Yes', 'No']
+})
+
+st.dataframe(data)
+
 def entropy(col):
     values, counts = np.unique(col, return_counts=True)
-    return -sum((c / len(col)) * math.log2(c / len(col)) for c in counts)
+    return sum((-counts[i] / len(col)) * math.log2(counts[i] / len(col))
+               for i in range(len(counts)))
 
 def info_gain(df, attr, target):
     total_entropy = entropy(df[target])
     vals = df[attr].unique()
-    weighted_entropy = sum(
-        (len(df[df[attr] == v]) / len(df)) * entropy(df[df[attr] == v][target])
-        for v in vals
-    )
-    return total_entropy - weighted_entropy
-
+    weighted_sum = sum(
+        (len(df[df[attr] == v]) / len(df)) *
+        entropy(df[df[attr] == v][target])
+        for v in vals)
+    return total_entropy - weighted_sum
 def id3(df, target, attrs):
     if len(df[target].unique()) == 1:
         return df[target].iloc[0]
@@ -25,45 +41,9 @@ def id3(df, target, attrs):
     tree = {best: {}}
     for val in df[best].unique():
         sub_df = df[df[best] == val]
-        tree[best][val] = id3(sub_df, target, [a for a in attrs if a != best])
+        remaining_attrs = [a for a in attrs if a != best]
+        tree[best][val] = id3(sub_df, target, remaining_attrs)
     return tree
-
-def predict(tree, input_data):
-    if not isinstance(tree, dict):
-        return tree
-    root = next(iter(tree))
-    val = input_data.get(root)
-    if val in tree[root]:
-        return predict(tree[root][val], input_data)
-    return "Unknown"
-
-st.title("ID3 Decision Tree Classifier")
-
-data_dict = {
-    "outlook": ['sunny', 'sunny', 'overcast', 'rain', 'rain', 'overcast',
-                'sunny', 'sunny', 'overcast', 'rain', 'overcast', 'overcast',
-                'rain', 'sunny'],
-    "humidity": ['high', 'normal', 'high', 'normal', 'high', 'high', 'normal',
-                 'normal', 'normal', 'normal', 'normal', 'high', 'high', 'normal'],
-    "playtennis": ['no', 'yes', 'yes', 'yes', 'no', 'yes', 'yes', 'yes', 'no',
-                   'yes', 'no', 'yes', 'yes', 'yes']
-}
-
-df = pd.DataFrame(data_dict)
-
-uploaded_file = st.file_uploader("Upload CSV", type="csv")
-if uploaded_file:
-    df = pd.read_csv(uploaded_file)
-
-target_col = st.selectbox("Target Column", df.columns, index=len(df.columns) - 1)
-features = [c for c in df.columns if c != target_col]
-
-if st.button("Train"):
-    tree = id3(df, target_col, features)
-    st.session_state['tree'] = tree
-    st.json(tree)
-
-if 'tree' in st.session_state:
-    inputs = {col: st.selectbox(col, df[col].unique()) for col in features}
-    if st.button("Predict"):
-        st.write(f"Result: {predict(st.session_state['tree'], inputs)}")
+attributes = list(data.columns[:-1])
+tree = id3(data, 'PlayTennis', attributes)
+st.write(tree)
