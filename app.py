@@ -48,6 +48,5 @@ st.session_state[’tree’] = tree
 st.json(tree)
 if ’tree’ in st.session_state:
 inputs = {col: st.selectbox(col, df[col].unique()) for col in features}
-2
 if st.button("Predict"):
 st.write(f"Result: {predict(st.session_state[’tree’], inputs)}")
